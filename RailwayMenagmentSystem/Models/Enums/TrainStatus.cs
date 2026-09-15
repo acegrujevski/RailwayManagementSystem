@@ -2,8 +2,7 @@
 
 public enum TrainStatus
 {
-    Active,
-    OnRoute,
-    Delayed,
-    OutOfService
+    Available,
+    Scheduled,
+    Broken
 }

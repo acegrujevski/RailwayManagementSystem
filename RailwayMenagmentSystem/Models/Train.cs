@@ -19,7 +19,7 @@ public class Train
     [Required]
     public TrainStatus Status { get; set; }
 
-    public ICollection<Schedule> Schedules { get; set; }
+    public ICollection<Schedule>? Schedules { get; set; }
 
-    public ICollection<TrainLocation> TrainLocations { get; set; }
+    public ICollection<TrainLocation>? TrainLocations { get; set; }
 }

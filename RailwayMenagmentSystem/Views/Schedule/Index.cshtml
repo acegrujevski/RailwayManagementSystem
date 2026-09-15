@@ -1,14 +1,47 @@
 @model IEnumerable<RailwayMenagmentSystem.Models.Schedule>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Schedules";
 }
 
-<h1>Index</h1>
+<h1>Schedules</h1>
 
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+
+<div class="card bg-light mb-4">
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+                <label class="form-label fw-bold">From Station</label>
+                <select name="fromStationId" class="form-select" asp-items="@(ViewData["FromStations"] as SelectList)">
+                    <option value="">-- All Stations --</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-bold">To Station</label>
+                <select name="toStationId" class="form-select" asp-items="@(ViewData["ToStations"] as SelectList)">
+                    <option value="">-- All Stations --</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Departure Date</label>
+                <input type="date" name="date" value="@ViewData["CurrentDate"]" class="form-control" />
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-secondary w-100">Filter</button>
+                <a asp-action="Index" class="btn btn-outline-secondary w-100">Clear</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
 <table class="table">
     <thead>
         <tr>
@@ -16,7 +49,10 @@
                 @Html.DisplayNameFor(model => model.Train)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Route)
+                From
+            </th>
+            <th>
+                To
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.DepartureTime)
@@ -33,33 +69,38 @@
             <th></th>
         </tr>
     </thead>
+
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Train.Model)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Route.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.DepartureTime)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ArrivalTime)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Price)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.AvailableSeats)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Train.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Route.DepartureStation.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Route.ArrivalStation.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.DepartureTime)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ArrivalTime)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Price)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.AvailableSeats)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

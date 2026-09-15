@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RailwayMenagmentSystem.Data;
 using RailwayMenagmentSystem.Models;
+using RailwayMenagmentSystem.Models.Enums;
 
 namespace RailwayMenagmentSystem.Controllers
 {
@@ -35,6 +35,7 @@ namespace RailwayMenagmentSystem.Controllers
 
             var train = await _context.Trains
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (train == null)
             {
                 return NotFound();
@@ -50,18 +51,19 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // POST: Train/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Model,Capacity,Status")] Train train)
+        public async Task<IActionResult> Create([Bind("Id,Name,Model,Capacity")] Train train)
         {
+            train.Status = TrainStatus.Available;
+
             if (ModelState.IsValid)
             {
                 _context.Add(train);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             return View(train);
         }
 
@@ -74,30 +76,40 @@ namespace RailwayMenagmentSystem.Controllers
             }
 
             var train = await _context.Trains.FindAsync(id);
+
             if (train == null)
             {
                 return NotFound();
             }
+
             return View(train);
         }
 
         // POST: Train/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Model,Capacity,Status")] Train train)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Model,Capacity")] Train train)
         {
             if (id != train.Id)
             {
                 return NotFound();
             }
 
+            var existingTrain = await _context.Trains.FindAsync(id);
+
+            if (existingTrain == null)
+            {
+                return NotFound();
+            }
+
             if (ModelState.IsValid)
             {
+                existingTrain.Name = train.Name;
+                existingTrain.Model = train.Model;
+                existingTrain.Capacity = train.Capacity;
+
                 try
                 {
-                    _context.Update(train);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -106,14 +118,57 @@ namespace RailwayMenagmentSystem.Controllers
                     {
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+
+                    throw;
                 }
+
                 return RedirectToAction(nameof(Index));
             }
+
             return View(train);
+        }
+
+        // POST: Train/SetBroken/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetBroken(int id)
+        {
+            var train = await _context.Trains.FindAsync(id);
+
+            if (train == null)
+            {
+                return NotFound();
+            }
+
+            if (train.Status == TrainStatus.Available ||
+                train.Status == TrainStatus.Scheduled)
+            {
+                train.Status = TrainStatus.Broken;
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: Train/SetAvailable/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetAvailable(int id)
+        {
+            var train = await _context.Trains.FindAsync(id);
+
+            if (train == null)
+            {
+                return NotFound();
+            }
+
+            if (train.Status == TrainStatus.Broken)
+            {
+                train.Status = TrainStatus.Available;
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Train/Delete/5
@@ -126,6 +181,7 @@ namespace RailwayMenagmentSystem.Controllers
 
             var train = await _context.Trains
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (train == null)
             {
                 return NotFound();
@@ -140,12 +196,14 @@ namespace RailwayMenagmentSystem.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var train = await _context.Trains.FindAsync(id);
+
             if (train != null)
             {
                 _context.Trains.Remove(train);
             }
 
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 

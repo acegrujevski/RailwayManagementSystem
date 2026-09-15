@@ -15,9 +15,9 @@ public class Station
     [Required]
     public string Address { get; set; }
 
-    public ICollection<Route> DepartureRoutes { get; set; }
+    public ICollection<Route>? DepartureRoutes { get; set; }
 
-    public ICollection<Route> ArrivalRoutes { get; set; }
+    public ICollection<Route>? ArrivalRoutes { get; set; }
 
-    public ICollection<TrainLocation> TrainLocations { get; set; }
+    public ICollection<TrainLocation>? TrainLocations { get; set; }
 }

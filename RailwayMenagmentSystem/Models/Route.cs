@@ -11,11 +11,11 @@ public class Route
 
     public int DepartureStationId { get; set; }
 
-    public Station DepartureStation { get; set; }
+    public Station? DepartureStation { get; set; }
 
     public int ArrivalStationId { get; set; }
 
-    public Station ArrivalStation { get; set; }
+    public Station? ArrivalStation { get; set; }
 
-    public ICollection<Schedule> Schedules { get; set; }
+    public ICollection<Schedule>? Schedules { get; set; }
 }

@@ -1,3 +1,4 @@
+@using RailwayMenagmentSystem.Models.Enums
 @model IEnumerable<RailwayMenagmentSystem.Models.Train>
 
 @{
@@ -9,6 +10,7 @@
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+
 <table class="table">
     <thead>
         <tr>
@@ -27,27 +29,57 @@
             <th></th>
         </tr>
     </thead>
+
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Model)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Capacity)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Status)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+
+                <td>
+                    @Html.DisplayFor(modelItem => item.Model)
+                </td>
+
+                <td>
+                    @Html.DisplayFor(modelItem => item.Capacity)
+                </td>
+
+                <td>
+                    @Html.DisplayFor(modelItem => item.Status)
+                </td>
+
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+
+                    @if (item.Status == TrainStatus.Available ||
+                         item.Status == TrainStatus.Scheduled)
+                    {
+                        <form asp-action="SetBroken"
+                              asp-route-id="@item.Id"
+                              method="post"
+                              style="display:inline;">
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                Set Broken
+                            </button>
+                        </form>
+                    }
+                    else if (item.Status == TrainStatus.Broken)
+                    {
+                        <form asp-action="SetAvailable"
+                              asp-route-id="@item.Id"
+                              method="post"
+                              style="display:inline;">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                Set Available
+                            </button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

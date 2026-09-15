@@ -8,11 +8,11 @@ public class Schedule
 
     public int TrainId { get; set; }
 
-    public Train Train { get; set; }
+    public Train? Train { get; set; }
 
     public int RouteId { get; set; }
 
-    public Route Route { get; set; }
+    public Route? Route { get; set; }
 
     [Required]
     public DateTime DepartureTime { get; set; }
@@ -26,5 +26,5 @@ public class Schedule
     [Range(0, 1000)]
     public int AvailableSeats { get; set; }
 
-    public ICollection<Reservation> Reservations { get; set; }
+    public ICollection<Reservation>? Reservations { get; set; }
 }

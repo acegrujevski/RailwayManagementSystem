@@ -39,6 +39,7 @@ namespace RailwayMenagmentSystem.Controllers
                 .Include(r => r.ArrivalStation)
                 .Include(r => r.DepartureStation)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (route == null)
             {
                 return NotFound();
@@ -50,26 +51,37 @@ namespace RailwayMenagmentSystem.Controllers
         // GET: Route/Create
         public IActionResult Create()
         {
-            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Address");
-            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Address");
+            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Name");
+            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Name");
             return View();
         }
 
         // POST: Route/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,DepartureStationId,ArrivalStationId")] Route route)
+        public async Task<IActionResult> Create([Bind("Id,DepartureStationId,ArrivalStationId")] Route route)
         {
+            var departureStation = await _context.Stations.FindAsync(route.DepartureStationId);
+            var arrivalStation = await _context.Stations.FindAsync(route.ArrivalStationId);
+
+            if (departureStation == null || arrivalStation == null)
+            {
+                return NotFound();
+            }
+
+            route.Name = departureStation.Name + " - " + arrivalStation.Name;
+
+            ModelState.Remove("Name");
+
             if (ModelState.IsValid)
             {
                 _context.Add(route);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Address", route.ArrivalStationId);
-            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Address", route.DepartureStationId);
+
+            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Name", route.ArrivalStationId);
+            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Name", route.DepartureStationId);
             return View(route);
         }
 
@@ -82,21 +94,21 @@ namespace RailwayMenagmentSystem.Controllers
             }
 
             var route = await _context.Routes.FindAsync(id);
+
             if (route == null)
             {
                 return NotFound();
             }
-            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Address", route.ArrivalStationId);
-            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Address", route.DepartureStationId);
+
+            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Name", route.ArrivalStationId);
+            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Name", route.DepartureStationId);
             return View(route);
         }
 
         // POST: Route/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,DepartureStationId,ArrivalStationId")] Route route)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,DepartureStationId,ArrivalStationId")] Route route)
         {
             if (id != route.Id)
             {
@@ -107,6 +119,16 @@ namespace RailwayMenagmentSystem.Controllers
             {
                 try
                 {
+                    var departureStation = await _context.Stations.FindAsync(route.DepartureStationId);
+                    var arrivalStation = await _context.Stations.FindAsync(route.ArrivalStationId);
+
+                    if (departureStation == null || arrivalStation == null)
+                    {
+                        return NotFound();
+                    }
+
+                    route.Name = departureStation.Name + " - " + arrivalStation.Name;
+
                     _context.Update(route);
                     await _context.SaveChangesAsync();
                 }
@@ -121,10 +143,12 @@ namespace RailwayMenagmentSystem.Controllers
                         throw;
                     }
                 }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Address", route.ArrivalStationId);
-            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Address", route.DepartureStationId);
+
+            ViewData["ArrivalStationId"] = new SelectList(_context.Stations, "Id", "Name", route.ArrivalStationId);
+            ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Name", route.DepartureStationId);
             return View(route);
         }
 
@@ -140,6 +164,7 @@ namespace RailwayMenagmentSystem.Controllers
                 .Include(r => r.ArrivalStation)
                 .Include(r => r.DepartureStation)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (route == null)
             {
                 return NotFound();
@@ -154,6 +179,7 @@ namespace RailwayMenagmentSystem.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var route = await _context.Routes.FindAsync(id);
+
             if (route != null)
             {
                 _context.Routes.Remove(route);
