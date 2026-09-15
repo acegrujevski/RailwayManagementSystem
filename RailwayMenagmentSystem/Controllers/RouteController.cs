@@ -55,6 +55,32 @@ namespace RailwayMenagmentSystem.Controllers
             ViewData["DepartureStationId"] = new SelectList(_context.Stations, "Id", "Name");
             return View();
         }
+        
+        // GET: Route/CreateRouteFromStation/5
+        public async Task<IActionResult> CreateRouteFromStation(int departureStationId)
+        {
+            var departureStation = await _context.Stations.FindAsync(departureStationId);
+
+            if (departureStation == null)
+            {
+                return NotFound();
+            }
+
+            ViewData["DepartureStation"] = departureStation;
+
+            ViewData["ArrivalStationId"] = new SelectList(
+                _context.Stations.Where(s => s.Id != departureStationId),
+                "Id",
+                "Name"
+            );
+
+            var route = new Route
+            {
+                DepartureStationId = departureStationId
+            };
+
+            return View(route);
+        }
 
         // POST: Route/Create
         [HttpPost]
@@ -69,6 +95,20 @@ namespace RailwayMenagmentSystem.Controllers
                 return NotFound();
             }
 
+            var routeExists = await _context.Routes.AnyAsync(r =>
+                r.DepartureStationId == route.DepartureStationId &&
+                r.ArrivalStationId == route.ArrivalStationId);
+
+            if (route.DepartureStationId == route.ArrivalStationId)
+            {
+                ModelState.AddModelError("ArrivalStationId", "Departure and arrival stations must be different.");
+            }
+            
+            if (routeExists)
+            {
+                ModelState.AddModelError("", "A route between these stations already exists.");
+            }
+            
             route.Name = departureStation.Name + " - " + arrivalStation.Name;
 
             ModelState.Remove("Name");

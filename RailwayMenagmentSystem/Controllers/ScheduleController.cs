@@ -27,7 +27,7 @@ namespace RailwayMenagmentSystem.Controllers
                 .Where(s =>
                     (fromStationId == null || s.Route.DepartureStationId == fromStationId) &&
                     (toStationId == null || s.Route.ArrivalStationId == toStationId) &&
-                    (date == null || s.DepartureTime.Date >= date.Value.Date)
+                    (date == null || s.DepartureTime.Value.Date >= date.Value.Date)
                 )
                 .Include(s => s.Route)
                     .ThenInclude(r => r.DepartureStation)
@@ -40,19 +40,8 @@ namespace RailwayMenagmentSystem.Controllers
             ViewData["CurrentToStation"] = toStationId;
             ViewData["CurrentDate"] = date?.ToString("yyyy-MM-dd");
 
-            ViewData["FromStations"] = new SelectList(
-                _context.Stations,
-                "Id",
-                "Name",
-                fromStationId
-            );
-
-            ViewData["ToStations"] = new SelectList(
-                _context.Stations,
-                "Id",
-                "Name",
-                toStationId
-            );
+            ViewData["FromStations"] = new SelectList(_context.Stations, "Id", "Name", fromStationId);
+            ViewData["ToStations"] = new SelectList(_context.Stations, "Id", "Name", toStationId);
 
             return View(schedules);
         }
@@ -66,8 +55,11 @@ namespace RailwayMenagmentSystem.Controllers
             }
 
             var schedule = await _context.Schedules
-                .Include(s => s.Route)
                 .Include(s => s.Train)
+                .Include(s => s.Route)
+                    .ThenInclude(r => r.DepartureStation)
+                .Include(s => s.Route)
+                    .ThenInclude(r => r.ArrivalStation)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (schedule == null)
@@ -81,23 +73,50 @@ namespace RailwayMenagmentSystem.Controllers
         // GET: Schedule/Create
         public IActionResult Create()
         {
-            ViewData["RouteId"] = new SelectList(_context.Routes, "Id", "Name");
-
             ViewData["TrainId"] = new SelectList(
-                _context.Trains.Where(t => t.Status == TrainStatus.Available),
+                _context.Trains.Where(t => t.Status != TrainStatus.Broken),
                 "Id",
                 "Name"
             );
 
+            ViewData["RouteId"] = new SelectList(_context.Routes, "Id", "Name");
+
             return View();
         }
 
+        // GET: Schedule/CreateScheduleFromRoute/5
+        public async Task<IActionResult> CreateScheduleFromRoute(int routeId)
+        {
+            var route = await _context.Routes
+                .Include(r => r.DepartureStation)
+                .Include(r => r.ArrivalStation)
+                .FirstOrDefaultAsync(r => r.Id == routeId);
+
+            if (route == null)
+            {
+                return NotFound();
+            }
+
+            ViewData["Route"] = route;
+
+            ViewData["TrainId"] = new SelectList(
+                _context.Trains.Where(t => t.Status != TrainStatus.Broken),
+                "Id",
+                "Name"
+            );
+
+            var schedule = new Schedule
+            {
+                RouteId = routeId
+            };
+
+            return View(schedule);
+        }
+        
         // POST: Schedule/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            [Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price")]
-            Schedule schedule)
+        public async Task<IActionResult> Create([Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price,AvailableSeats")] Schedule schedule)
         {
             var train = await _context.Trains.FindAsync(schedule.TrainId);
 
@@ -106,44 +125,52 @@ namespace RailwayMenagmentSystem.Controllers
                 return NotFound();
             }
 
-            if (train.Status != TrainStatus.Available)
+            if (train.Status == TrainStatus.Broken)
             {
-                ModelState.AddModelError("TrainId", "This train is not available.");
+                ModelState.AddModelError("TrainId", "A broken train cannot be scheduled.");
             }
-
-            schedule.AvailableSeats = train.Capacity;
 
             if (schedule.ArrivalTime <= schedule.DepartureTime)
             {
-                ModelState.AddModelError(
-                    "ArrivalTime",
-                    "Arrival time must be after departure time."
-                );
+                ModelState.AddModelError("ArrivalTime", "Arrival time must be after departure time.");
+            }
+
+            var hasConflict = await _context.Schedules.AnyAsync(s =>
+                s.TrainId == schedule.TrainId &&
+                schedule.DepartureTime < s.ArrivalTime &&
+                schedule.ArrivalTime > s.DepartureTime
+            );
+
+            if (hasConflict)
+            {
+                ModelState.AddModelError("TrainId", "This train already has a schedule during this time period.");
             }
 
             if (ModelState.IsValid)
             {
-                train.Status = TrainStatus.Scheduled;
+                schedule.AvailableSeats = train.Capacity;
 
                 _context.Add(schedule);
+
+                train.Status = TrainStatus.Scheduled;
 
                 await _context.SaveChangesAsync();
 
                 return RedirectToAction(nameof(Index));
             }
 
+            ViewData["TrainId"] = new SelectList(
+                _context.Trains.Where(t => t.Status != TrainStatus.Broken),
+                "Id",
+                "Name",
+                schedule.TrainId
+            );
+
             ViewData["RouteId"] = new SelectList(
                 _context.Routes,
                 "Id",
                 "Name",
                 schedule.RouteId
-            );
-
-            ViewData["TrainId"] = new SelectList(
-                _context.Trains.Where(t => t.Status == TrainStatus.Available || t.Id == schedule.TrainId),
-                "Id",
-                "Name",
-                schedule.TrainId
             );
 
             return View(schedule);
@@ -164,19 +191,19 @@ namespace RailwayMenagmentSystem.Controllers
                 return NotFound();
             }
 
+            ViewData["TrainId"] = new SelectList(
+                _context.Trains.Where(t =>
+                    t.Status != TrainStatus.Broken || t.Id == schedule.TrainId),
+                "Id",
+                "Name",
+                schedule.TrainId
+            );
+
             ViewData["RouteId"] = new SelectList(
                 _context.Routes,
                 "Id",
                 "Name",
                 schedule.RouteId
-            );
-
-            ViewData["TrainId"] = new SelectList(
-                _context.Trains.Where(t =>
-                    t.Status == TrainStatus.Available || t.Id == schedule.TrainId),
-                "Id",
-                "Name",
-                schedule.TrainId
             );
 
             return View(schedule);
@@ -185,10 +212,7 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Schedule/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(
-            int id,
-            [Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price")]
-            Schedule schedule)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price,AvailableSeats")] Schedule schedule)
         {
             if (id != schedule.Id)
             {
@@ -196,6 +220,7 @@ namespace RailwayMenagmentSystem.Controllers
             }
 
             var existingSchedule = await _context.Schedules
+                .Include(s => s.Train)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (existingSchedule == null)
@@ -210,69 +235,89 @@ namespace RailwayMenagmentSystem.Controllers
                 return NotFound();
             }
 
-            if (schedule.ArrivalTime <= schedule.DepartureTime)
+            if (newTrain.Status == TrainStatus.Broken)
             {
-                ModelState.AddModelError(
-                    "ArrivalTime",
-                    "Arrival time must be after departure time."
-                );
+                ModelState.AddModelError("TrainId", "A broken train cannot be scheduled.");
             }
 
-            if (existingSchedule.TrainId != schedule.TrainId &&
-                newTrain.Status != TrainStatus.Available)
+            if (schedule.ArrivalTime <= schedule.DepartureTime)
             {
-                ModelState.AddModelError(
-                    "TrainId",
-                    "This train is not available."
-                );
+                ModelState.AddModelError("ArrivalTime", "Arrival time must be after departure time.");
+            }
+
+            var hasConflict = await _context.Schedules.AnyAsync(s =>
+                s.Id != id &&
+                s.TrainId == schedule.TrainId &&
+                schedule.DepartureTime < s.ArrivalTime &&
+                schedule.ArrivalTime > s.DepartureTime
+            );
+
+            if (hasConflict)
+            {
+                ModelState.AddModelError("TrainId", "This train already has a schedule during this time period.");
             }
 
             if (ModelState.IsValid)
             {
-                var oldTrain = await _context.Trains.FindAsync(existingSchedule.TrainId);
+                var oldTrainId = existingSchedule.TrainId;
 
                 existingSchedule.TrainId = schedule.TrainId;
                 existingSchedule.RouteId = schedule.RouteId;
                 existingSchedule.DepartureTime = schedule.DepartureTime;
                 existingSchedule.ArrivalTime = schedule.ArrivalTime;
                 existingSchedule.Price = schedule.Price;
-                existingSchedule.AvailableSeats = newTrain.Capacity;
+                existingSchedule.AvailableSeats = schedule.AvailableSeats;
 
-                if (oldTrain != null && oldTrain.Id != newTrain.Id)
+                if (oldTrainId != schedule.TrainId)
                 {
-                    var oldTrainHasOtherSchedules = await _context.Schedules
-                        .AnyAsync(s => s.TrainId == oldTrain.Id && s.Id != id);
+                    var oldTrain = await _context.Trains.FindAsync(oldTrainId);
 
-                    if (!oldTrainHasOtherSchedules)
+                    if (oldTrain != null)
                     {
-                        oldTrain.Status = TrainStatus.Available;
+                        var oldTrainHasSchedules = await _context.Schedules.AnyAsync(s =>
+                            s.Id != id &&
+                            s.TrainId == oldTrainId
+                        );
+
+                        if (!oldTrainHasSchedules)
+                        {
+                            oldTrain.Status = TrainStatus.Available;
+                        }
                     }
 
                     newTrain.Status = TrainStatus.Scheduled;
                 }
-                else
-                {
-                    newTrain.Status = TrainStatus.Scheduled;
-                }
 
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ScheduleExists(schedule.Id))
+                    {
+                        return NotFound();
+                    }
+
+                    throw;
+                }
 
                 return RedirectToAction(nameof(Index));
             }
+
+            ViewData["TrainId"] = new SelectList(
+                _context.Trains.Where(t =>
+                    t.Status != TrainStatus.Broken || t.Id == schedule.TrainId),
+                "Id",
+                "Name",
+                schedule.TrainId
+            );
 
             ViewData["RouteId"] = new SelectList(
                 _context.Routes,
                 "Id",
                 "Name",
                 schedule.RouteId
-            );
-
-            ViewData["TrainId"] = new SelectList(
-                _context.Trains.Where(t =>
-                    t.Status == TrainStatus.Available || t.Id == schedule.TrainId),
-                "Id",
-                "Name",
-                schedule.TrainId
             );
 
             return View(schedule);
@@ -287,8 +332,11 @@ namespace RailwayMenagmentSystem.Controllers
             }
 
             var schedule = await _context.Schedules
-                .Include(s => s.Route)
                 .Include(s => s.Train)
+                .Include(s => s.Route)
+                    .ThenInclude(r => r.DepartureStation)
+                .Include(s => s.Route)
+                    .ThenInclude(r => r.ArrivalStation)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (schedule == null)
@@ -305,25 +353,21 @@ namespace RailwayMenagmentSystem.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var schedule = await _context.Schedules
+                .Include(s => s.Train)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
-            if (schedule == null)
+            if (schedule != null)
             {
-                return NotFound();
-            }
+                var train = schedule.Train;
 
-            var train = await _context.Trains.FindAsync(schedule.TrainId);
+                _context.Schedules.Remove(schedule);
 
-            _context.Schedules.Remove(schedule);
+                await _context.SaveChangesAsync();
 
-            await _context.SaveChangesAsync();
-
-            if (train != null)
-            {
-                var hasOtherSchedules = await _context.Schedules
+                var trainHasSchedules = await _context.Schedules
                     .AnyAsync(s => s.TrainId == train.Id);
 
-                if (!hasOtherSchedules)
+                if (!trainHasSchedules && train.Status == TrainStatus.Scheduled)
                 {
                     train.Status = TrainStatus.Available;
                     await _context.SaveChangesAsync();

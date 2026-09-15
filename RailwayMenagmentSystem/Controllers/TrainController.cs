@@ -41,6 +41,16 @@ namespace RailwayMenagmentSystem.Controllers
                 return NotFound();
             }
 
+            var schedules = await _context.Schedules
+                .Where(s => s.TrainId == id)
+                .Include(s => s.Route)
+                .ThenInclude(r => r.DepartureStation)
+                .Include(s => s.Route)
+                .ThenInclude(r => r.ArrivalStation)
+                .ToListAsync();
+
+            ViewData["Schedules"] = schedules;
+
             return View(train);
         }
 
@@ -61,6 +71,7 @@ namespace RailwayMenagmentSystem.Controllers
             {
                 _context.Add(train);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
 
@@ -144,6 +155,7 @@ namespace RailwayMenagmentSystem.Controllers
                 train.Status == TrainStatus.Scheduled)
             {
                 train.Status = TrainStatus.Broken;
+
                 await _context.SaveChangesAsync();
             }
 
@@ -165,6 +177,7 @@ namespace RailwayMenagmentSystem.Controllers
             if (train.Status == TrainStatus.Broken)
             {
                 train.Status = TrainStatus.Available;
+
                 await _context.SaveChangesAsync();
             }
 

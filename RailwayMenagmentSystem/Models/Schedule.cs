@@ -15,10 +15,10 @@ public class Schedule
     public Route? Route { get; set; }
 
     [Required]
-    public DateTime DepartureTime { get; set; }
+    public DateTime ?DepartureTime { get; set; }
 
     [Required]
-    public DateTime ArrivalTime { get; set; }
+    public DateTime ?ArrivalTime { get; set; }
 
     [Range(1, 100000)]
     public decimal Price { get; set; }

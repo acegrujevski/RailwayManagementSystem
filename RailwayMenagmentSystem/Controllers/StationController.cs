@@ -35,10 +35,28 @@ namespace RailwayMenagmentSystem.Controllers
 
             var station = await _context.Stations
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (station == null)
             {
                 return NotFound();
             }
+
+            var departureSchedules = await _context.Schedules
+                .Where(s => s.Route.DepartureStationId == id)
+                .Include(s => s.Route)
+                .ThenInclude(r => r.ArrivalStation)
+                .Include(s => s.Train)
+                .ToListAsync();
+
+            var arrivalSchedules = await _context.Schedules
+                .Where(s => s.Route.ArrivalStationId == id)
+                .Include(s => s.Route)
+                .ThenInclude(r => r.DepartureStation)
+                .Include(s => s.Train)
+                .ToListAsync();
+
+            ViewData["DepartureSchedules"] = departureSchedules;
+            ViewData["ArrivalSchedules"] = arrivalSchedules;
 
             return View(station);
         }
