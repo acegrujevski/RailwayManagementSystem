@@ -1,15 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RailwayMenagmentSystem.Data;
 using RailwayMenagmentSystem.Models;
 
 namespace RailwayMenagmentSystem.Controllers
 {
+    [Authorize]
     public class StationController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -20,12 +17,14 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Station
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Stations.ToListAsync());
         }
 
         // GET: Station/Details/5
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -62,28 +61,32 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Station/Create
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             return View();
         }
 
         // POST: Station/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,City,Address")] Station station)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create(
+            [Bind("Id,Name,City,Address")] Station station)
         {
             if (ModelState.IsValid)
             {
                 _context.Add(station);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
+
             return View(station);
         }
 
         // GET: Station/Edit/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -92,19 +95,22 @@ namespace RailwayMenagmentSystem.Controllers
             }
 
             var station = await _context.Stations.FindAsync(id);
+
             if (station == null)
             {
                 return NotFound();
             }
+
             return View(station);
         }
 
         // POST: Station/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,City,Address")] Station station)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(
+            int id,
+            [Bind("Id,Name,City,Address")] Station station)
         {
             if (id != station.Id)
             {
@@ -124,17 +130,18 @@ namespace RailwayMenagmentSystem.Controllers
                     {
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+
+                    throw;
                 }
+
                 return RedirectToAction(nameof(Index));
             }
+
             return View(station);
         }
 
         // GET: Station/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -144,6 +151,7 @@ namespace RailwayMenagmentSystem.Controllers
 
             var station = await _context.Stations
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (station == null)
             {
                 return NotFound();
@@ -155,15 +163,33 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Station/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var station = await _context.Stations.FindAsync(id);
-            if (station != null)
+
+            if (station == null)
             {
-                _context.Stations.Remove(station);
+                return NotFound();
             }
 
+            var isUsedInRoute = await _context.Routes
+                .AnyAsync(r =>
+                    r.DepartureStationId == id ||
+                    r.ArrivalStationId == id);
+
+            if (isUsedInRoute)
+            {
+                TempData["ErrorMessage"] =
+                    "This station cannot be deleted because it is used by one or more routes.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            _context.Stations.Remove(station);
+
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 

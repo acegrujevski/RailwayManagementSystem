@@ -7,9 +7,12 @@
 
 <h1>Index</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+@if (User.IsInRole("Admin"))
+{
+    <p>
+        <a asp-action="Create">Create New</a>
+    </p>
+}
 
 <table class="table">
     <thead>
@@ -51,35 +54,63 @@
                 </td>
 
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    <a asp-action="Details"
+                       asp-route-id="@item.Id">
+                        Details
+                    </a>
 
-                    @if (item.Status == TrainStatus.Available ||
-                         item.Status == TrainStatus.Scheduled)
+                    @if (User.IsInRole("Admin"))
                     {
-                        <form asp-action="SetBroken"
-                              asp-route-id="@item.Id"
-                              method="post"
-                              style="display:inline;">
-                            <button type="submit" class="btn btn-warning btn-sm">
-                                Set Broken
-                            </button>
-                        </form>
+                        <span> | </span>
+
+                        <a asp-action="Edit"
+                           asp-route-id="@item.Id">
+                            Edit
+                        </a>
+
+                        <span> | </span>
+
+                        <a asp-action="Delete"
+                           asp-route-id="@item.Id">
+                            Delete
+                        </a>
                     }
-                    else if (item.Status == TrainStatus.Broken)
+
+                    @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
                     {
-                        <form asp-action="SetAvailable"
-                              asp-route-id="@item.Id"
-                              method="post"
-                              style="display:inline;">
-                            <button type="submit" class="btn btn-success btn-sm">
-                                Set Available
-                            </button>
-                        </form>
+                        @if (item.Status == TrainStatus.Available ||
+                             item.Status == TrainStatus.Scheduled)
+                        {
+                            <span> | </span>
+
+                            <form asp-action="SetBroken"
+                                  asp-route-id="@item.Id"
+                                  method="post"
+                                  style="display:inline;">
+                                <button type="submit"
+                                        class="btn btn-warning btn-sm">
+                                    Set Broken
+                                </button>
+                            </form>
+                        }
+                        else if (item.Status == TrainStatus.Broken)
+                        {
+                            <span> | </span>
+
+                            <form asp-action="SetAvailable"
+                                  asp-route-id="@item.Id"
+                                  method="post"
+                                  style="display:inline;">
+                                <button type="submit"
+                                        class="btn btn-success btn-sm">
+                                    Set Available
+                                </button>
+                            </form>
+                        }
                     }
                 </td>
             </tr>
         }
     </tbody>
 </table>
+

@@ -1,54 +1,89 @@
 @model RailwayMenagmentSystem.Models.Schedule
 
 @{
-    ViewData["Title"] = "Details";
+ViewData["Title"] = "Details";
 }
 
 <h1>Details</h1>
 
+@if (TempData["ErrorMessage"] != null)
+{ <div class="alert alert-danger">
+@TempData["ErrorMessage"] </div>
+}
+
 <div>
     <h4>Schedule</h4>
     <hr />
+
+
     <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Train)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Train.Name)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Route)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Route.Name)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.DepartureTime)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.DepartureTime)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ArrivalTime)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ArrivalTime)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Price)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Price)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.AvailableSeats)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.AvailableSeats)
-        </dd>
+        <dt class="col-sm-2">Train</dt>
+        <dd class="col-sm-10">@Model.Train?.Name</dd>
+
+        <dt class="col-sm-2">Route</dt>
+        <dd class="col-sm-10">@Model.Route?.Name</dd>
+
+        <dt class="col-sm-2">From</dt>
+        <dd class="col-sm-10">@Model.Route?.DepartureStation?.Name</dd>
+
+        <dt class="col-sm-2">To</dt>
+        <dd class="col-sm-10">@Model.Route?.ArrivalStation?.Name</dd>
+
+        <dt class="col-sm-2">Departure</dt>
+        <dd class="col-sm-10">@Model.DepartureTime</dd>
+
+        <dt class="col-sm-2">Arrival</dt>
+        <dd class="col-sm-10">@Model.ArrivalTime</dd>
+
+        <dt class="col-sm-2">Price</dt>
+        <dd class="col-sm-10">@Model.Price</dd>
+
+        <dt class="col-sm-2">Available Seats</dt>
+        <dd class="col-sm-10">@Model.AvailableSeats</dd>
+
+        <dt class="col-sm-2">Train Status</dt>
+        <dd class="col-sm-10">@Model.Train?.Status</dd>
     </dl>
+    
 </div>
+
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    @if (User.IsInRole("User") &&
+         Model.Train?.Status != RailwayMenagmentSystem.Models.Enums.TrainStatus.Broken &&
+         Model.AvailableSeats > 0)
+    {
+        <a asp-controller="Reservation"
+           asp-action="Create"
+           asp-route-scheduleId="@Model.Id"
+           class="btn btn-primary">
+            Reserve
+        </a>
+    }
+    else if (Model.Train?.Status == RailwayMenagmentSystem.Models.Enums.TrainStatus.Broken)
+    {
+        <span class="text-danger">
+            This train is currently unavailable.
+        </span>
+    }
+    else if (Model.AvailableSeats <= 0)
+    {
+        <span class="text-danger">
+            No available seats.
+        </span>
+    }
+
+
+    @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+    {
+        <a asp-action="Edit"
+           asp-route-id="@Model.Id"
+           class="btn btn-secondary">
+            Edit
+        </a>
+    }
+
+    <a asp-action="Index"
+       class="btn btn-outline-secondary">
+        Back to List
+    </a>
 </div>

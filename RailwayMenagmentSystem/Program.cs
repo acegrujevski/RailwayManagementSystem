@@ -43,10 +43,24 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
         name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}")
+        pattern: "{controller=Schedule}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 app.MapRazorPages()
     .WithStaticAssets();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    try
+    {
+        await RoleSeeder.SeedRolesAndUsersAsync(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred during role seeding: {ex.Message}");
+    }
+}
 
 app.Run();

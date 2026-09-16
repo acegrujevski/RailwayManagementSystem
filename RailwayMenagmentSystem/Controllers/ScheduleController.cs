@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +12,7 @@ namespace RailwayMenagmentSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
 
+
         public ScheduleController(ApplicationDbContext context)
         {
             _context = context;
@@ -27,12 +25,12 @@ namespace RailwayMenagmentSystem.Controllers
                 .Where(s =>
                     (fromStationId == null || s.Route.DepartureStationId == fromStationId) &&
                     (toStationId == null || s.Route.ArrivalStationId == toStationId) &&
-                    (date == null || s.DepartureTime.Value.Date >= date.Value.Date)
+                    (date == null || (s.DepartureTime.HasValue && s.DepartureTime.Value.Date >= date.Value.Date))
                 )
                 .Include(s => s.Route)
-                    .ThenInclude(r => r.DepartureStation)
+                .ThenInclude(r => r.DepartureStation)
                 .Include(s => s.Route)
-                    .ThenInclude(r => r.ArrivalStation)
+                .ThenInclude(r => r.ArrivalStation)
                 .Include(s => s.Train)
                 .ToListAsync();
 
@@ -40,8 +38,19 @@ namespace RailwayMenagmentSystem.Controllers
             ViewData["CurrentToStation"] = toStationId;
             ViewData["CurrentDate"] = date?.ToString("yyyy-MM-dd");
 
-            ViewData["FromStations"] = new SelectList(_context.Stations, "Id", "Name", fromStationId);
-            ViewData["ToStations"] = new SelectList(_context.Stations, "Id", "Name", toStationId);
+            ViewData["FromStations"] = new SelectList(
+                _context.Stations,
+                "Id",
+                "Name",
+                fromStationId
+            );
+
+            ViewData["ToStations"] = new SelectList(
+                _context.Stations,
+                "Id",
+                "Name",
+                toStationId
+            );
 
             return View(schedules);
         }
@@ -57,9 +66,9 @@ namespace RailwayMenagmentSystem.Controllers
             var schedule = await _context.Schedules
                 .Include(s => s.Train)
                 .Include(s => s.Route)
-                    .ThenInclude(r => r.DepartureStation)
+                .ThenInclude(r => r.DepartureStation)
                 .Include(s => s.Route)
-                    .ThenInclude(r => r.ArrivalStation)
+                .ThenInclude(r => r.ArrivalStation)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (schedule == null)
@@ -71,6 +80,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Schedule/Create
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             ViewData["TrainId"] = new SelectList(
@@ -79,12 +89,17 @@ namespace RailwayMenagmentSystem.Controllers
                 "Name"
             );
 
-            ViewData["RouteId"] = new SelectList(_context.Routes, "Id", "Name");
+            ViewData["RouteId"] = new SelectList(
+                _context.Routes,
+                "Id",
+                "Name"
+            );
 
             return View();
         }
 
         // GET: Schedule/CreateScheduleFromRoute/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateScheduleFromRoute(int routeId)
         {
             var route = await _context.Routes
@@ -112,11 +127,14 @@ namespace RailwayMenagmentSystem.Controllers
 
             return View(schedule);
         }
-        
+
         // POST: Schedule/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price,AvailableSeats")] Schedule schedule)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create(
+            [Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price,AvailableSeats")]
+            Schedule schedule)
         {
             var train = await _context.Trains.FindAsync(schedule.TrainId);
 
@@ -127,23 +145,43 @@ namespace RailwayMenagmentSystem.Controllers
 
             if (train.Status == TrainStatus.Broken)
             {
-                ModelState.AddModelError("TrainId", "A broken train cannot be scheduled.");
+                ModelState.AddModelError(
+                    "TrainId",
+                    "A broken train cannot be scheduled."
+                );
             }
 
-            if (schedule.ArrivalTime <= schedule.DepartureTime)
+            if (!schedule.DepartureTime.HasValue || !schedule.ArrivalTime.HasValue)
             {
-                ModelState.AddModelError("ArrivalTime", "Arrival time must be after departure time.");
+                ModelState.AddModelError(
+                    "",
+                    "Departure and arrival time are required."
+                );
+            }
+            else if (schedule.ArrivalTime <= schedule.DepartureTime)
+            {
+                ModelState.AddModelError(
+                    "ArrivalTime",
+                    "Arrival time must be after departure time."
+                );
             }
 
             var hasConflict = await _context.Schedules.AnyAsync(s =>
                 s.TrainId == schedule.TrainId &&
-                schedule.DepartureTime < s.ArrivalTime &&
-                schedule.ArrivalTime > s.DepartureTime
+                s.DepartureTime.HasValue &&
+                s.ArrivalTime.HasValue &&
+                schedule.DepartureTime.HasValue &&
+                schedule.ArrivalTime.HasValue &&
+                schedule.DepartureTime.Value < s.ArrivalTime.Value &&
+                schedule.ArrivalTime.Value > s.DepartureTime.Value
             );
 
             if (hasConflict)
             {
-                ModelState.AddModelError("TrainId", "This train already has a schedule during this time period.");
+                ModelState.AddModelError(
+                    "TrainId",
+                    "This train already has a schedule during this time period."
+                );
             }
 
             if (ModelState.IsValid)
@@ -177,6 +215,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Schedule/Edit/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -212,7 +251,11 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Schedule/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price,AvailableSeats")] Schedule schedule)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(
+            int id,
+            [Bind("Id,TrainId,RouteId,DepartureTime,ArrivalTime,Price,AvailableSeats")]
+            Schedule schedule)
         {
             if (id != schedule.Id)
             {
@@ -237,24 +280,44 @@ namespace RailwayMenagmentSystem.Controllers
 
             if (newTrain.Status == TrainStatus.Broken)
             {
-                ModelState.AddModelError("TrainId", "A broken train cannot be scheduled.");
+                ModelState.AddModelError(
+                    "TrainId",
+                    "A broken train cannot be scheduled."
+                );
             }
 
-            if (schedule.ArrivalTime <= schedule.DepartureTime)
+            if (!schedule.DepartureTime.HasValue || !schedule.ArrivalTime.HasValue)
             {
-                ModelState.AddModelError("ArrivalTime", "Arrival time must be after departure time.");
+                ModelState.AddModelError(
+                    "",
+                    "Departure and arrival time are required."
+                );
+            }
+            else if (schedule.ArrivalTime <= schedule.DepartureTime)
+            {
+                ModelState.AddModelError(
+                    "ArrivalTime",
+                    "Arrival time must be after departure time."
+                );
             }
 
             var hasConflict = await _context.Schedules.AnyAsync(s =>
                 s.Id != id &&
                 s.TrainId == schedule.TrainId &&
-                schedule.DepartureTime < s.ArrivalTime &&
-                schedule.ArrivalTime > s.DepartureTime
+                s.DepartureTime.HasValue &&
+                s.ArrivalTime.HasValue &&
+                schedule.DepartureTime.HasValue &&
+                schedule.ArrivalTime.HasValue &&
+                schedule.DepartureTime.Value < s.ArrivalTime.Value &&
+                schedule.ArrivalTime.Value > s.DepartureTime.Value
             );
 
             if (hasConflict)
             {
-                ModelState.AddModelError("TrainId", "This train already has a schedule during this time period.");
+                ModelState.AddModelError(
+                    "TrainId",
+                    "This train already has a schedule during this time period."
+                );
             }
 
             if (ModelState.IsValid)
@@ -324,6 +387,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Schedule/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -334,9 +398,9 @@ namespace RailwayMenagmentSystem.Controllers
             var schedule = await _context.Schedules
                 .Include(s => s.Train)
                 .Include(s => s.Route)
-                    .ThenInclude(r => r.DepartureStation)
+                .ThenInclude(r => r.DepartureStation)
                 .Include(s => s.Route)
-                    .ThenInclude(r => r.ArrivalStation)
+                .ThenInclude(r => r.ArrivalStation)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (schedule == null)
@@ -350,6 +414,7 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Schedule/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var schedule = await _context.Schedules

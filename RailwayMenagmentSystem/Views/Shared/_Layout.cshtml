@@ -13,7 +13,7 @@
 <header>
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
         <div class="container-fluid">
-            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+            <a class="navbar-brand" asp-area="" asp-controller="Schedule" asp-action="Index">
                 RailwayMenagmentSystem
             </a>
 
@@ -25,28 +25,32 @@
 
             <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                 <ul class="navbar-nav flex-grow-1">
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
-                            Home
-                        </a>
-                    </li>
 
                     <li class="nav-item">
+                        @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+                        {
                         <a class="nav-link text-dark" asp-area="" asp-controller="Train" asp-action="Index">
                             Trains
                         </a>
+                        }
                     </li>
 
                     <li class="nav-item">
+                        @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+                        {
                         <a class="nav-link text-dark" asp-area="" asp-controller="Station" asp-action="Index">
                             Stations
                         </a>
+                        }
                     </li>
 
                     <li class="nav-item">
+                        @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+                        {
                         <a class="nav-link text-dark" asp-area="" asp-controller="Route" asp-action="Index">
                             Routes
                         </a>
+                        }
                     </li>
 
                     <li class="nav-item">
@@ -54,12 +58,13 @@
                             Schedules
                         </a>
                     </li>
-
+                    
                     <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">
-                            Privacy
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Reservation" asp-action="Index">
+                            Reservation
                         </a>
                     </li>
+                    
                 </ul>
 
                 <partial name="_LoginPartial"/>

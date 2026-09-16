@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RailwayMenagmentSystem.Data;
@@ -20,12 +17,14 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Train
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Trains.ToListAsync());
         }
 
         // GET: Train/Details/5
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -55,6 +54,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Train/Create
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             return View();
@@ -63,6 +63,7 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Train/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([Bind("Id,Name,Model,Capacity")] Train train)
         {
             train.Status = TrainStatus.Available;
@@ -79,6 +80,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Train/Edit/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -99,7 +101,10 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Train/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Model,Capacity")] Train train)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(
+            int id,
+            [Bind("Id,Name,Model,Capacity")] Train train)
         {
             if (id != train.Id)
             {
@@ -142,6 +147,7 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Train/SetBroken/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> SetBroken(int id)
         {
             var train = await _context.Trains.FindAsync(id);
@@ -156,6 +162,21 @@ namespace RailwayMenagmentSystem.Controllers
             {
                 train.Status = TrainStatus.Broken;
 
+                var activeReservations = await _context.Reservations
+                    .Include(r => r.Schedule)
+                    .Where(r =>
+                        r.Schedule.TrainId == id &&
+                        r.Status == ReservationStatus.Active)
+                    .ToListAsync();
+
+                foreach (var reservation in activeReservations)
+                {
+                    reservation.Status = ReservationStatus.Cancelled;
+
+                    reservation.Schedule.AvailableSeats +=
+                        reservation.NumberOfSeats;
+                }
+
                 await _context.SaveChangesAsync();
             }
 
@@ -165,6 +186,7 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Train/SetAvailable/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> SetAvailable(int id)
         {
             var train = await _context.Trains.FindAsync(id);
@@ -185,6 +207,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: Train/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -206,6 +229,7 @@ namespace RailwayMenagmentSystem.Controllers
         // POST: Train/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var train = await _context.Trains.FindAsync(id);
@@ -225,4 +249,5 @@ namespace RailwayMenagmentSystem.Controllers
             return _context.Trains.Any(e => e.Id == id);
         }
     }
+
 }

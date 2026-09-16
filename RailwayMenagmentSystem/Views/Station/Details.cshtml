@@ -38,14 +38,17 @@
     </dl>
 </div>
 
-<div class="mb-3">
-    <a asp-controller="Route"
-       asp-action="CreateRouteFromStation"
-       asp-route-departureStationId="@Model.Id"
-       class="btn btn-primary">
-        Create Route from this Station
-    </a>
-</div>
+@if (User.IsInRole("Admin"))
+{
+    <div class="mb-3">
+        <a asp-controller="Route"
+           asp-action="CreateRouteFromStation"
+           asp-route-departureStationId="@Model.Id"
+           class="btn btn-primary">
+            Create Route from this Station
+        </a>
+    </div>
+}
 
 <hr />
 

@@ -1,59 +1,131 @@
 @model IEnumerable<RailwayMenagmentSystem.Models.Reservation>
+@using RailwayMenagmentSystem.Models.Enums
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = User.IsInRole("Admin") || User.IsInRole("Employee")
+        ? "All Reservations"
+        : "My Reservations";
 }
 
-<h1>Index</h1>
+<h1>@ViewData["Title"]</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+@if (User.IsInRole("Admin") || User.IsInRole("User"))
+{
+    <form asp-action="DeleteAllCancelled"
+          method="post"
+          class="mb-3"
+          onsubmit="return confirm('Are you sure you want to delete all cancelled reservations?');">
+
+        @Html.AntiForgeryToken()
+
+        <button type="submit"
+                class="btn btn-danger">
+            Delete All Cancelled
+        </button>
+    </form>
+}
+
 <table class="table">
+
     <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Schedule)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.User)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ReservationDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.NumberOfSeats)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Status)
-            </th>
-            <th></th>
-        </tr>
+    <tr>
+        <th>Train</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Departure</th>
+        <th>Seats</th>
+        <th>Reservation Date</th>
+        <th>Status</th>
+
+        @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+        {
+            <th>User</th>
+        }
+
+        <th></th>
+    </tr>
     </thead>
+
     <tbody>
-@foreach (var item in Model) {
+    @foreach (var item in Model)
+    {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.Schedule.Id)
+                @item.Schedule?.Train?.Name
             </td>
+
             <td>
-                @Html.DisplayFor(modelItem => item.User.Id)
+                @item.Schedule?.Route?.DepartureStation?.Name
             </td>
+
             <td>
-                @Html.DisplayFor(modelItem => item.ReservationDate)
+                @item.Schedule?.Route?.ArrivalStation?.Name
             </td>
+
             <td>
-                @Html.DisplayFor(modelItem => item.NumberOfSeats)
+                @item.Schedule?.DepartureTime
             </td>
+
             <td>
-                @Html.DisplayFor(modelItem => item.Status)
+                @item.NumberOfSeats
             </td>
+
             <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                @item.ReservationDate
+            </td>
+
+            <td>
+                @item.Status
+            </td>
+
+            @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+            {
+                <td>
+                    @item.UserId
+                </td>
+            }
+
+            <td>
+                <a asp-action="Details"
+                   asp-route-id="@item.Id"
+                   class="btn btn-sm btn-secondary">
+                    Details
+                </a>
+
+                @if (User.IsInRole("User") &&
+                     item.Status == ReservationStatus.Active)
+                {
+                    <form asp-action="Cancel"
+                          asp-route-id="@item.Id"
+                          method="post"
+                          style="display:inline;">
+
+                        <button type="submit"
+                                class="btn btn-sm btn-danger"
+                                onclick="return confirm('Are you sure you want to cancel this reservation?');">
+                            Cancel
+                        </button>
+                    </form>
+                }
+
+                @if ((User.IsInRole("Admin") || User.IsInRole("User")) &&
+                     item.Status == ReservationStatus.Cancelled)
+                {
+                    <form asp-action="Delete"
+                          asp-route-id="@item.Id"
+                          method="post"
+                          style="display:inline;">
+
+                        <button type="submit"
+                                class="btn btn-sm btn-danger"
+                                onclick="return confirm('Are you sure you want to delete this cancelled reservation?');">
+                            Delete
+                        </button>
+                    </form>
+                }
             </td>
         </tr>
-}
+    }
     </tbody>
+
 </table>
