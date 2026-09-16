@@ -1,4 +1,6 @@
 @model RailwayMenagmentSystem.Models.Train
+@using RailwayMenagmentSystem.Models
+
 
 @{
     ViewData["Title"] = "Details";
@@ -41,6 +43,29 @@
         </dd>
     </dl>
 </div>
+
+@{
+    var lastLocation = ViewData["LastLocation"] as TrainLocation;
+}
+
+<hr />
+
+<h4>Last Location</h4>
+
+@if (lastLocation != null)
+{
+    <p>
+        <strong>Last seen at:</strong> @lastLocation.Station.Name
+    </p>
+
+    <p>
+        <strong>Recorded at:</strong> @lastLocation.RecordedAt
+    </p>
+}
+else
+{
+    <p>No location data available.</p>
+}
 
 <hr />
 

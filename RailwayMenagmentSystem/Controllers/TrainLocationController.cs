@@ -19,11 +19,73 @@ namespace RailwayMenagmentSystem.Controllers
             _context = context;
         }
 
+        public class TrainLocationPayload
+        {
+            public int TrainId { get; set; }
+
+            public int StationId { get; set; }
+        }
+
         // GET: TrainLocation
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.TrainLocations.Include(t => t.Station).Include(t => t.Train);
+            var applicationDbContext = _context.TrainLocations
+                .Include(t => t.Station)
+                .Include(t => t.Train);
+
             return View(await applicationDbContext.ToListAsync());
+        }
+
+        [HttpPost]
+        [Route("api/trainlocation")]
+        public async Task<IActionResult> ReceiveLocation([FromBody] TrainLocationPayload payload)
+        {
+            if (payload == null)
+            {
+                return BadRequest(new
+                {
+                    message = "Invalid data packet structure."
+                });
+            }
+
+            var trainExists = await _context.Trains
+                .AnyAsync(t => t.Id == payload.TrainId);
+
+            if (!trainExists)
+            {
+                return NotFound(new
+                {
+                    message = $"Train with ID '{payload.TrainId}' was not found."
+                });
+            }
+
+            var stationExists = await _context.Stations
+                .AnyAsync(s => s.Id == payload.StationId);
+
+            if (!stationExists)
+            {
+                return NotFound(new
+                {
+                    message = $"Station with ID '{payload.StationId}' was not found."
+                });
+            }
+
+            var trainLocation = new TrainLocation
+            {
+                TrainId = payload.TrainId,
+                StationId = payload.StationId,
+                RecordedAt = DateTime.Now
+            };
+
+            _context.TrainLocations.Add(trainLocation);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Train location recorded successfully.",
+                timestamp = trainLocation.RecordedAt
+            });
         }
 
         // GET: TrainLocation/Details/5
@@ -38,6 +100,7 @@ namespace RailwayMenagmentSystem.Controllers
                 .Include(t => t.Station)
                 .Include(t => t.Train)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (trainLocation == null)
             {
                 return NotFound();
@@ -51,24 +114,37 @@ namespace RailwayMenagmentSystem.Controllers
         {
             ViewData["StationId"] = new SelectList(_context.Stations, "Id", "Address");
             ViewData["TrainId"] = new SelectList(_context.Trains, "Id", "Model");
+
             return View();
         }
 
         // POST: TrainLocation/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,TrainId,StationId,RecordedAt")] TrainLocation trainLocation)
+        public async Task<IActionResult> Create(
+            [Bind("Id,TrainId,StationId,RecordedAt")] TrainLocation trainLocation)
         {
             if (ModelState.IsValid)
             {
                 _context.Add(trainLocation);
+
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["StationId"] = new SelectList(_context.Stations, "Id", "Address", trainLocation.StationId);
-            ViewData["TrainId"] = new SelectList(_context.Trains, "Id", "Model", trainLocation.TrainId);
+
+            ViewData["StationId"] = new SelectList(
+                _context.Stations,
+                "Id",
+                "Address",
+                trainLocation.StationId);
+
+            ViewData["TrainId"] = new SelectList(
+                _context.Trains,
+                "Id",
+                "Model",
+                trainLocation.TrainId);
+
             return View(trainLocation);
         }
 
@@ -81,21 +157,33 @@ namespace RailwayMenagmentSystem.Controllers
             }
 
             var trainLocation = await _context.TrainLocations.FindAsync(id);
+
             if (trainLocation == null)
             {
                 return NotFound();
             }
-            ViewData["StationId"] = new SelectList(_context.Stations, "Id", "Address", trainLocation.StationId);
-            ViewData["TrainId"] = new SelectList(_context.Trains, "Id", "Model", trainLocation.TrainId);
+
+            ViewData["StationId"] = new SelectList(
+                _context.Stations,
+                "Id",
+                "Address",
+                trainLocation.StationId);
+
+            ViewData["TrainId"] = new SelectList(
+                _context.Trains,
+                "Id",
+                "Model",
+                trainLocation.TrainId);
+
             return View(trainLocation);
         }
 
         // POST: TrainLocation/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,TrainId,StationId,RecordedAt")] TrainLocation trainLocation)
+        public async Task<IActionResult> Edit(
+            int id,
+            [Bind("Id,TrainId,StationId,RecordedAt")] TrainLocation trainLocation)
         {
             if (id != trainLocation.Id)
             {
@@ -107,6 +195,7 @@ namespace RailwayMenagmentSystem.Controllers
                 try
                 {
                     _context.Update(trainLocation);
+
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -115,15 +204,25 @@ namespace RailwayMenagmentSystem.Controllers
                     {
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+
+                    throw;
                 }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["StationId"] = new SelectList(_context.Stations, "Id", "Address", trainLocation.StationId);
-            ViewData["TrainId"] = new SelectList(_context.Trains, "Id", "Model", trainLocation.TrainId);
+
+            ViewData["StationId"] = new SelectList(
+                _context.Stations,
+                "Id",
+                "Address",
+                trainLocation.StationId);
+
+            ViewData["TrainId"] = new SelectList(
+                _context.Trains,
+                "Id",
+                "Model",
+                trainLocation.TrainId);
+
             return View(trainLocation);
         }
 
@@ -139,6 +238,7 @@ namespace RailwayMenagmentSystem.Controllers
                 .Include(t => t.Station)
                 .Include(t => t.Train)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (trainLocation == null)
             {
                 return NotFound();
@@ -153,12 +253,14 @@ namespace RailwayMenagmentSystem.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var trainLocation = await _context.TrainLocations.FindAsync(id);
+
             if (trainLocation != null)
             {
                 _context.TrainLocations.Remove(trainLocation);
             }
 
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 

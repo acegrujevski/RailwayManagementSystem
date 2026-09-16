@@ -49,6 +49,14 @@ namespace RailwayMenagmentSystem.Controllers
                 .ToListAsync();
 
             ViewData["Schedules"] = schedules;
+            
+            var lastLocation = await _context.TrainLocations
+                .Include(tl => tl.Station)
+                .Where(tl => tl.TrainId == id)
+                .OrderByDescending(tl => tl.RecordedAt)
+                .FirstOrDefaultAsync();
+
+            ViewData["LastLocation"] = lastLocation;
 
             return View(train);
         }

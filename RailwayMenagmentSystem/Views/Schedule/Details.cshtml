@@ -82,6 +82,13 @@ ViewData["Title"] = "Details";
         </a>
     }
 
+    <a asp-controller="Train"
+       asp-action="Details"
+       asp-route-id="@Model.TrainId"
+       class="btn btn-info">
+        View Train
+    </a>
+    
     <a asp-action="Index"
        class="btn btn-outline-secondary">
         Back to List

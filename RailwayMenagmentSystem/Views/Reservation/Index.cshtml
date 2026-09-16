@@ -81,7 +81,7 @@
             @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
             {
                 <td>
-                    @item.UserId
+                    @item.User?.Email
                 </td>
             }
 

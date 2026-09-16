@@ -36,7 +36,8 @@ namespace RailwayMenagmentSystem.Controllers
                 .ThenInclude(r => r.DepartureStation)
                 .Include(r => r.Schedule)
                 .ThenInclude(s => s.Route)
-                .ThenInclude(r => r.ArrivalStation);
+                .ThenInclude(r => r.ArrivalStation)
+                .Include(r => r.User);
 
             List<Reservation> reservations;
 
