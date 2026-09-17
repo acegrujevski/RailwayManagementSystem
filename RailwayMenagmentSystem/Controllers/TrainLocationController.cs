@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using RailwayMenagmentSystem.Models;
 
 namespace RailwayMenagmentSystem.Controllers
 {
+    
     public class TrainLocationController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -27,6 +29,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: TrainLocation
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
             var applicationDbContext = _context.TrainLocations
@@ -89,6 +92,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: TrainLocation/Details/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -110,6 +114,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: TrainLocation/Create
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             ViewData["StationId"] = new SelectList(_context.Stations, "Id", "Address");
@@ -120,6 +125,7 @@ namespace RailwayMenagmentSystem.Controllers
 
         // POST: TrainLocation/Create
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
             [Bind("Id,TrainId,StationId,RecordedAt")] TrainLocation trainLocation)
@@ -149,6 +155,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: TrainLocation/Edit/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -180,6 +187,7 @@ namespace RailwayMenagmentSystem.Controllers
 
         // POST: TrainLocation/Edit/5
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             int id,
@@ -227,6 +235,7 @@ namespace RailwayMenagmentSystem.Controllers
         }
 
         // GET: TrainLocation/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -249,6 +258,7 @@ namespace RailwayMenagmentSystem.Controllers
 
         // POST: TrainLocation/Delete/5
         [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {

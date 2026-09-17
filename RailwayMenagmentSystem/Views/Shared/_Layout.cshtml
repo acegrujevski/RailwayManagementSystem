@@ -1,9 +1,9 @@
-﻿ <!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>@ViewData["Title"] - RailwayMenagmentSystem</title>
+    <title>@ViewData["Title"] - Railway Management System</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
@@ -11,10 +11,10 @@
 </head>
 <body>
 <header>
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-        <div class="container-fluid">
+    <nav class="navbar navbar-expand-sm navbar-light app-navbar">
+        <div class="container">
             <a class="navbar-brand" asp-area="" asp-controller="Schedule" asp-action="Index">
-                RailwayMenagmentSystem
+                Railway Management System
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -26,45 +26,47 @@
             <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                 <ul class="navbar-nav flex-grow-1">
 
-                    <li class="nav-item">
-                        @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
-                        {
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Train" asp-action="Index">
-                            Trains
-                        </a>
-                        }
-                    </li>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Train" asp-action="Index">
+                                Trains
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Station" asp-action="Index">
+                                Stations
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Route" asp-action="Index">
+                                Routes
+                            </a>
+                        </li>
+                    }
 
                     <li class="nav-item">
-                        @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
-                        {
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Station" asp-action="Index">
-                            Stations
-                        </a>
-                        }
-                    </li>
-
-                    <li class="nav-item">
-                        @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
-                        {
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Route" asp-action="Index">
-                            Routes
-                        </a>
-                        }
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Schedule" asp-action="Index">
+                        <a class="nav-link" asp-controller="Schedule" asp-action="Index">
                             Schedules
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Reservation" asp-action="Index">
-                            Reservation
+                        <a class="nav-link" asp-controller="Reservation" asp-action="Index">
+                            Reservations
                         </a>
                     </li>
-                    
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="TrainLocation" asp-action="Index">
+                                Train Locations
+                            </a>
+                        </li>
+                    }
                 </ul>
 
                 <partial name="_LoginPartial"/>
@@ -79,10 +81,10 @@
     </main>
 </div>
 
-<footer class="border-top footer text-muted">
+<footer class="app-footer">
     <div class="container">
-        &copy; 2026 - RailwayMenagmentSystem -
-        <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        <span>&copy; 2026 Railway Management System</span>
+        <a asp-controller="Home" asp-action="Privacy">Privacy</a>
     </div>
 </footer>
 
