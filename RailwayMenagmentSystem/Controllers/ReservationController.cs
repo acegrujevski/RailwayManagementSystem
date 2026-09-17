@@ -58,7 +58,7 @@ namespace RailwayMenagmentSystem.Controllers
 
                 ViewData["Title"] = "My Reservations";
             }
-
+            
             return View(reservations);
         }
 

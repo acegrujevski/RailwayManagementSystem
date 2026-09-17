@@ -1,17 +1,69 @@
 @model IEnumerable<RailwayMenagmentSystem.Models.Schedule>
 
 @{
-    ViewData["Title"] = "Index";
+ViewData["Title"] = "Schedules";
 }
 
 <h1>Schedules</h1>
 
 @if (User.IsInRole("Admin"))
-{
-    <p>
-        <a asp-action="Create">Create New</a>
-    </p>
+{ <p> <a asp-action="Create">Create New</a> </p>
 }
+
+<form asp-action="Index" method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="fromStationId" class="form-label">From</label>
+            <select name="fromStationId" id="fromStationId" class="form-select">
+                <option value="">All stations</option>
+                
+            @foreach (var station in ViewBag.Stations)
+            {
+                <option value="@station.Id"
+                        selected="@(Context.Request.Query["fromStationId"] == station.Id.ToString())">
+                    @station.Name
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="toStationId" class="form-label">To</label>
+        <select name="toStationId" id="toStationId" class="form-select">
+            <option value="">All stations</option>
+
+            @foreach (var station in ViewBag.Stations)
+            {
+                <option value="@station.Id"
+                        selected="@(Context.Request.Query["toStationId"] == station.Id.ToString())">
+                    @station.Name
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="date" class="form-label">Date</label>
+        <input type="date"
+               name="date"
+               id="date"
+               class="form-control"
+               value="@Context.Request.Query["date"]" />
+    </div>
+
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary me-2">
+            Filter
+        </button>
+
+        <a asp-action="Index" class="btn btn-secondary">
+            Clear
+        </a>
+    </div>
+</div>
+
+
+</form>
 
 <table class="table">
     <thead>
@@ -37,59 +89,61 @@
             <th></th>
         </tr>
     </thead>
-
+    
     <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.DepartureTime)
-                </td>
+    
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.DepartureTime)
+            </td>
 
-                <td>
-                    @Html.DisplayFor(modelItem => item.ArrivalTime)
-                </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ArrivalTime)
+            </td>
 
-                <td>
-                    @Html.DisplayFor(modelItem => item.Price)
-                </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Price)
+            </td>
 
-                <td>
-                    @Html.DisplayFor(modelItem => item.AvailableSeats)
-                </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AvailableSeats)
+            </td>
 
-                <td>
-                    @item.Train?.Name
-                </td>
+            <td>
+                @item.Train?.Name
+            </td>
 
-                <td>
-                    @item.Route?.Name
-                </td>
+            <td>
+                @item.Route?.Name
+            </td>
 
-                <td>
-                    <a asp-action="Details"
+            <td>
+                <a asp-action="Details"
+                   asp-route-id="@item.Id">
+                    Details
+                </a>
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <span> | </span>
+
+                    <a asp-action="Edit"
                        asp-route-id="@item.Id">
-                        Details
+                        Edit
                     </a>
 
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <span> | </span>
+                    <span> | </span>
 
-                        <a asp-action="Edit"
-                           asp-route-id="@item.Id">
-                            Edit
-                        </a>
-
-                        <span> | </span>
-
-                        <a asp-action="Delete"
-                           asp-route-id="@item.Id">
-                            Delete
-                        </a>
-                    }
-                </td>
-            </tr>
-        }
+                    <a asp-action="Delete"
+                       asp-route-id="@item.Id">
+                        Delete
+                    </a>
+                }
+            </td>
+        </tr>
+    }
     </tbody>
+    
 </table>

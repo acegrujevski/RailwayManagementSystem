@@ -52,6 +52,8 @@ namespace RailwayMenagmentSystem.Controllers
                 toStationId
             );
 
+            ViewBag.Stations = await _context.Stations.ToListAsync();
+            
             return View(schedules);
         }
 
